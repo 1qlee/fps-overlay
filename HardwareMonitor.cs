@@ -8,13 +8,13 @@ namespace FpsOverlay
     public readonly record struct HardwareStats(
         string? CpuName,
         float? CpuTempC,
-        float? CpuLoadPct,
+        float? CpuPowerW,
         string? GpuName,
         float? GpuTempC,
-        float? GpuLoadPct);
+        float? GpuPowerW);
 
     /// <summary>
-    /// Reads CPU and GPU temperature/load through LibreHardwareMonitorLib.
+    /// Reads CPU and GPU temperature and power draw through LibreHardwareMonitorLib.
     /// CPU temperatures come from model-specific registers, which need a kernel
     /// driver (PawnIO in current LibreHardwareMonitor releases) and admin rights.
     /// GPU readings come from the vendor APIs (NVAPI, ADL, Intel IGCL).
@@ -58,10 +58,12 @@ namespace FpsOverlay
                     cpu?.Name,
                     cpu is null ? null : Pick(AllSensors(cpu), SensorType.Temperature,
                         "CPU Package", "Core (Tctl/Tdie)", "Core (Tctl)", "Core (Tdie)", "Core Max", "Core Average"),
-                    cpu is null ? null : Pick(AllSensors(cpu), SensorType.Load, "CPU Total"),
+                    cpu is null ? null : Pick(AllSensors(cpu), SensorType.Power,
+                        "CPU Package", "Package", "Core (SVI2 TFN)", "CPU Cores"),
                     gpu?.Name,
                     gpu is null ? null : Pick(AllSensors(gpu), SensorType.Temperature, "GPU Core", "GPU Hot Spot"),
-                    gpu is null ? null : Pick(AllSensors(gpu), SensorType.Load, "GPU Core", "D3D 3D"));
+                    gpu is null ? null : Pick(AllSensors(gpu), SensorType.Power,
+                        "GPU Package", "GPU Board Power", "GPU Power", "GPU Total", "GPU Core"));
             }
         }
 
@@ -74,10 +76,10 @@ namespace FpsOverlay
         /// </summary>
         private static float? Pick(IEnumerable<ISensor> sensors, SensorType type, params string[] preferredNames)
         {
-            // Unsupported temperature sensors often report 0, so ignore those.
+            // Unsupported temperature/power sensors often report 0, so ignore those.
             var ofType = sensors
                 .Where(s => s.SensorType == type && s.Value.HasValue)
-                .Where(s => type != SensorType.Temperature || s.Value > 0)
+                .Where(s => type is not (SensorType.Temperature or SensorType.Power) || s.Value > 0)
                 .ToList();
 
             foreach (var name in preferredNames)

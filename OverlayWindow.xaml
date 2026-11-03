@@ -13,59 +13,75 @@
         Focusable="False">
 
     <Window.Resources>
+        <!-- Bahnschrift ships with Windows 10+; Segoe UI is the fallback. -->
+        <FontFamily x:Key="OverlayFont">Bahnschrift, Segoe UI</FontFamily>
+
+        <SolidColorBrush x:Key="CpuColor" Color="#FF5C5C" />
+        <SolidColorBrush x:Key="GpuColor" Color="#4ADE80" />
+        <SolidColorBrush x:Key="FpsColor" Color="#4DA3FF" />
+
         <Style TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="Consolas" />
-            <Setter Property="FontSize" Value="15" />
-            <Setter Property="Foreground" Value="#F2F2F2" />
-            <Setter Property="Margin" Value="0,1,14,1" />
+            <Setter Property="FontFamily" Value="{StaticResource OverlayFont}" />
+            <Setter Property="FontSize" Value="22" />
+            <Setter Property="Foreground" Value="#F5F5F5" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
+
+        <!-- Section label: CPU / GPU / FPS -->
         <Style x:Key="Label" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-            <Setter Property="Foreground" Value="#9AA4AE" />
-            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Margin" Value="0,0,10,0" />
         </Style>
-        <Style x:Key="Value" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-            <Setter Property="FontWeight" Value="Bold" />
+
+        <!-- A number with a small raised unit, e.g. 69°C or 305W -->
+        <Style x:Key="Reading" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+            <Setter Property="Margin" Value="0,0,14,0" />
             <Setter Property="TextAlignment" Value="Right" />
-            <Setter Property="MinWidth" Value="52" />
         </Style>
-        <Style x:Key="Detail" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-            <Setter Property="Foreground" Value="#C8CDD2" />
-            <Setter Property="TextAlignment" Value="Right" />
-            <Setter Property="MinWidth" Value="64" />
+
+        <Style TargetType="Run" x:Key="Unit">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="BaselineAlignment" Value="Superscript" />
+        </Style>
+
+        <!-- Space between the CPU, GPU and FPS groups -->
+        <Style x:Key="Group" TargetType="StackPanel">
+            <Setter Property="Orientation" Value="Horizontal" />
+            <Setter Property="Margin" Value="0,0,10,0" />
         </Style>
     </Window.Resources>
 
-    <Border Background="#B0101418" CornerRadius="6" Padding="10,6,0,6">
-        <StackPanel>
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition />
-                    <RowDefinition />
-                    <RowDefinition />
-                </Grid.RowDefinitions>
+    <StackPanel>
+        <Border Background="#E6080A0C" CornerRadius="22" Padding="22,8,12,8">
+            <StackPanel Orientation="Horizontal">
+                <StackPanel Style="{StaticResource Group}">
+                    <TextBlock Style="{StaticResource Label}" Foreground="{StaticResource CpuColor}" Text="CPU" />
+                    <TextBlock Style="{StaticResource Reading}" MinWidth="50">
+                        <Run x:Name="CpuTempValue" Text="–" /><Run x:Name="CpuTempUnit" Style="{StaticResource Unit}" Text="°C" />
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource Reading}" MinWidth="50">
+                        <Run x:Name="CpuPowerValue" Text="–" /><Run Style="{StaticResource Unit}" Text="W" />
+                    </TextBlock>
+                </StackPanel>
 
-                <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource Label}" Text="FPS" />
-                <TextBlock Grid.Row="0" Grid.Column="1" Style="{StaticResource Value}" x:Name="FpsText" Text="–" />
-                <TextBlock Grid.Row="0" Grid.Column="2" Style="{StaticResource Detail}" x:Name="FrameTimeText" Text="" />
-                <TextBlock Grid.Row="0" Grid.Column="3" Style="{StaticResource Detail}" x:Name="LowText" Text="" />
+                <StackPanel Style="{StaticResource Group}">
+                    <TextBlock Style="{StaticResource Label}" Foreground="{StaticResource GpuColor}" Text="GPU" />
+                    <TextBlock Style="{StaticResource Reading}" MinWidth="50">
+                        <Run x:Name="GpuTempValue" Text="–" /><Run x:Name="GpuTempUnit" Style="{StaticResource Unit}" Text="°C" />
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource Reading}" MinWidth="62">
+                        <Run x:Name="GpuPowerValue" Text="–" /><Run Style="{StaticResource Unit}" Text="W" />
+                    </TextBlock>
+                </StackPanel>
 
-                <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource Label}" Text="CPU" />
-                <TextBlock Grid.Row="1" Grid.Column="1" Style="{StaticResource Value}" x:Name="CpuTempText" Text="–" />
-                <TextBlock Grid.Row="1" Grid.Column="2" Style="{StaticResource Detail}" x:Name="CpuLoadText" Text="" />
+                <StackPanel Style="{StaticResource Group}">
+                    <TextBlock Style="{StaticResource Label}" Foreground="{StaticResource FpsColor}" Text="FPS" />
+                    <TextBlock Style="{StaticResource Reading}" x:Name="FpsText" MinWidth="40" Text="–" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
 
-                <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource Label}" Text="GPU" />
-                <TextBlock Grid.Row="2" Grid.Column="1" Style="{StaticResource Value}" x:Name="GpuTempText" Text="–" />
-                <TextBlock Grid.Row="2" Grid.Column="2" Style="{StaticResource Detail}" x:Name="GpuLoadText" Text="" />
-            </Grid>
-
-            <TextBlock x:Name="StatusText" FontSize="11" Foreground="#7E8890" Margin="0,3,10,0" Text="starting…" />
-        </StackPanel>
-    </Border>
+        <!-- Only shown when something is wrong (not elevated, sensors missing, ...). -->
+        <TextBlock x:Name="StatusText" Visibility="Collapsed" FontSize="11" Foreground="#C8CDD2"
+                   Margin="22,4,0,0" />
+    </StackPanel>
 </Window>

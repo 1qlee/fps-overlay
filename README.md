@@ -1,17 +1,14 @@
 # FPS Overlay
 
-A small, click-through, always-on-top Windows overlay that shows:
-
-- **FPS** of the game you're playing, plus frame time and **1% low**
-- **CPU** temperature and load
-- **GPU** temperature and load
+A small, click-through, always-on-top Windows overlay: a single dark pill that shows
 
 ```
-FPS   144   6.9 ms   1% 98
-CPU   62°C   23%
-GPU   71°C   97%
-eldenring
+CPU 69°C 70W   GPU 62°C 305W   FPS 70
 ```
+
+- **CPU** (red label): temperature and package power draw
+- **GPU** (green label): temperature and board power draw
+- **FPS** (blue label): frame rate of the game you're playing
 
 The overlay doesn't inject anything into the game. It reads the same Windows
 event traces (ETW) that PresentMon and CapFrameX use, so it's safe to run with
@@ -50,10 +47,10 @@ dotnet publish -c Release -r win-x64 --self-contained true -o publish
 
 The overlay tracks the app in the **foreground window**. If that app isn't
 rendering, it falls back to whichever process is presenting the most frames.
-The bottom line shows the name of the process being measured.
 
-Colours: FPS is green at 55 or more, amber at 30–54 and red below 30.
-Temperatures turn amber at 75 °C and red at 85 °C.
+Temperatures turn amber at 75 °C and red at 85 °C. A reading the hardware
+doesn't report shows `–`. If something is wrong, for example the app isn't
+elevated or the sensors can't load, a short message appears under the pill.
 
 ## Limitations
 
@@ -64,15 +61,17 @@ Temperatures turn amber at 75 °C and red at 85 °C.
   game. Use *borderless* / *windowed fullscreen*. Most DX12 games, and DX11
   games with Windows' fullscreen optimisations, already behave this way.
 - **Multiple monitors:** the overlay sits on the primary monitor.
-- **Sensor names:** these vary between CPU and GPU models. The app looks for
-  "CPU Package" / "Core (Tctl/Tdie)" and "GPU Core". If those are missing it uses
-  the highest temperature it can find.
+- **Sensor names:** these vary between CPU and GPU models. For temperature the
+  app looks for "CPU Package" / "Core (Tctl/Tdie)" and "GPU Core". For power it
+  looks for "CPU Package" / "Package" and "GPU Package" / "GPU Board Power" /
+  "GPU Power". If none of those exist it uses the highest reading of that type.
+  Some older GPUs don't report power at all.
 
 ## How it works
 
 | File | Role |
 | --- | --- |
-| `FrameRateMonitor.cs` | Starts a real-time ETW session on the `Microsoft-Windows-DXGI` and `Microsoft-Windows-D3D9` providers, records the timestamp of each `Present` event per process, and computes FPS (last 1 s) and 1% low (last 10 s). |
-| `HardwareMonitor.cs` | Polls CPU/GPU sensors once a second through [LibreHardwareMonitorLib](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor). |
+| `FrameRateMonitor.cs` | Starts a real-time ETW session on the `Microsoft-Windows-DXGI` and `Microsoft-Windows-D3D9` providers, records the timestamp of each `Present` event per process, and computes FPS over the last second. |
+| `HardwareMonitor.cs` | Polls CPU/GPU temperature and power once a second through [LibreHardwareMonitorLib](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor). |
 | `OverlayWindow.xaml(.cs)` | Transparent WPF window with `WS_EX_TRANSPARENT \| WS_EX_NOACTIVATE`, so clicks pass through and it never takes focus from the game. Refreshes twice a second and handles the global hotkeys. |
 | `TrayIcon.cs` | Notification-area icon with show/hide, move and exit. |

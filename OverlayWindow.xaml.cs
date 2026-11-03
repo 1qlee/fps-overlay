@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Documents;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -20,7 +21,6 @@ namespace FpsOverlay
         private const double EdgeMargin = 12;
 
         private static readonly Brush Normal = Frozen("#F2F2F2");
-        private static readonly Brush Good = Frozen("#7CDB8A");
         private static readonly Brush Warn = Frozen("#F2B544");
         private static readonly Brush Hot = Frozen("#F2665C");
 
@@ -96,47 +96,30 @@ namespace FpsOverlay
                 NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
 
             var frames = _fps.GetStats(NativeMethods.GetForegroundProcessId());
-            if (frames is { } f)
-            {
-                FpsText.Text = f.Fps.ToString("0", CultureInfo.InvariantCulture);
-                FpsText.Foreground = f.Fps >= 55 ? Good : f.Fps >= 30 ? Warn : Hot;
-                FrameTimeText.Text = f.FrameTimeMs.ToString("0.0", CultureInfo.InvariantCulture) + " ms";
-                LowText.Text = "1% " + f.OnePercentLowFps.ToString("0", CultureInfo.InvariantCulture);
-            }
-            else
-            {
-                FpsText.Text = "–";
-                FpsText.Foreground = Normal;
-                FrameTimeText.Text = "";
-                LowText.Text = "";
-            }
+            FpsText.Text = frames is { } f ? f.Fps.ToString("0", CultureInfo.InvariantCulture) : "–";
 
             var hw = _latestHardware;
-            SetTemp(CpuTempText, hw?.CpuTempC);
-            SetTemp(GpuTempText, hw?.GpuTempC);
-            CpuLoadText.Text = FormatPct(hw?.CpuLoadPct);
-            GpuLoadText.Text = FormatPct(hw?.GpuLoadPct);
+            SetTemp(CpuTempValue, CpuTempUnit, hw?.CpuTempC);
+            SetTemp(GpuTempValue, GpuTempUnit, hw?.GpuTempC);
+            CpuPowerValue.Text = FormatNumber(hw?.CpuPowerW);
+            GpuPowerValue.Text = FormatNumber(hw?.GpuPowerW);
 
-            StatusText.Text = _fps.StartupError
-                ?? _hardwareError
-                ?? (frames is { } fr ? fr.ProcessName : "no game rendering");
+            string? error = _fps.StartupError ?? _hardwareError;
+            StatusText.Text = error ?? "";
+            StatusText.Visibility = error is null ? Visibility.Collapsed : Visibility.Visible;
         }
 
-        private static void SetTemp(System.Windows.Controls.TextBlock block, float? celsius)
+        /// <summary>Temperatures stay white until they get hot, then turn amber and red.</summary>
+        private static void SetTemp(Run value, Run unit, float? celsius)
         {
-            if (celsius is not { } c)
-            {
-                block.Text = "–";
-                block.Foreground = Normal;
-                return;
-            }
-
-            block.Text = c.ToString("0", CultureInfo.InvariantCulture) + "°C";
-            block.Foreground = c >= 85 ? Hot : c >= 75 ? Warn : Normal;
+            value.Text = FormatNumber(celsius);
+            Brush color = celsius is { } c ? (c >= 85 ? Hot : c >= 75 ? Warn : Normal) : Normal;
+            value.Foreground = color;
+            unit.Foreground = color;
         }
 
-        private static string FormatPct(float? pct) =>
-            pct is { } p ? p.ToString("0", CultureInfo.InvariantCulture) + "%" : "";
+        private static string FormatNumber(float? n) =>
+            n is { } v ? v.ToString("0", CultureInfo.InvariantCulture) : "–";
 
         public void ToggleVisibility()
         {
