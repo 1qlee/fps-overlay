@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <!-- Implicit usings would pull in both WPF and WinForms namespaces and make
+         names like Application/Timer ambiguous, so everything is explicit. -->
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>FpsOverlay</AssemblyName>
+    <RootNamespace>FpsOverlay</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Lets the project restore/build from non-Windows machines (e.g. CI). -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- CPU/GPU sensors (temperatures, load). Needs admin rights. -->
+    <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" />
+    <!-- Real-time ETW sessions, used to count Present() calls per process. -->
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.2.8" />
+  </ItemGroup>
+
+</Project>
