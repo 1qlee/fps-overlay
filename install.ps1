@@ -31,10 +31,10 @@ function Test-Admin {
 # Registering an elevated task (or removing one) needs admin: relaunch elevated with the same switches.
 $needsAdmin = $StartWithWindows -or ($Uninstall -and (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue))
 if ($needsAdmin -and -not (Test-Admin)) {
-    $args = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"")
-    if ($StartWithWindows) { $args += '-StartWithWindows' }
-    if ($Uninstall)        { $args += '-Uninstall' }
-    Start-Process powershell -Verb RunAs -ArgumentList $args -WorkingDirectory $PSScriptRoot
+    $relaunch = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"")
+    if ($StartWithWindows) { $relaunch += '-StartWithWindows' }
+    if ($Uninstall)        { $relaunch += '-Uninstall' }
+    Start-Process powershell -Verb RunAs -ArgumentList $relaunch -WorkingDirectory $PSScriptRoot
     return
 }
 
