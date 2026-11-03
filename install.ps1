@@ -38,19 +38,28 @@ function Pause-IfInteractive {
 }
 
 try {
-    # Registering an elevated task (or removing one) needs admin: relaunch elevated with the same switches.
-    $needsAdmin = $StartWithWindows -or ($Uninstall -and (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue))
+    # Admin is needed to register/remove the elevated startup task, and to close a
+    # running copy (the overlay itself runs elevated). Relaunch elevated if so.
+    $running    = Get-Process FpsOverlay -ErrorAction SilentlyContinue
+    $needsAdmin = $StartWithWindows -or $running -or
+                  ($Uninstall -and (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue))
     if ($needsAdmin -and -not (Test-Admin)) {
         $relaunch = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"")
         if ($StartWithWindows) { $relaunch += '-StartWithWindows' }
         if ($Uninstall)        { $relaunch += '-Uninstall' }
+        Write-Host "Asking for administrator rights to continue (a new window will open)..."
         Start-Process powershell -Verb RunAs -ArgumentList $relaunch -WorkingDirectory $PSScriptRoot
         return
     }
 
-    Write-Host "Stopping any running copy..."
-    Get-Process FpsOverlay -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-    Start-Sleep -Milliseconds 500
+    if ($running) {
+        Write-Host "Closing the running overlay..."
+        $running | Stop-Process -Force
+        $running | Wait-Process -Timeout 10 -ErrorAction SilentlyContinue
+        if (Get-Process FpsOverlay -ErrorAction SilentlyContinue) {
+            throw "Couldn't close the running overlay. Exit it from its tray icon (right-click > Exit) and try again."
+        }
+    }
 
     if ($Uninstall) {
         Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue

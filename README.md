@@ -43,6 +43,21 @@ Command Prompt or PowerShell window in that folder:
 
 `.\install.cmd -Uninstall` removes the app, its shortcut and the startup task.
 
+**Without a browser** (avoids Chrome blocking the unsigned download). Install the
+GitHub CLI once with `winget install GitHub.cli`, open a new PowerShell window,
+run `gh auth login`, then:
+
+```powershell
+$run = gh run list -R 1qlee/fps-overlay -w Build -s success -L 1 --json databaseId -q '.[0].databaseId'
+$dir = "$HOME\Downloads\FpsOverlay"
+Remove-Item $dir -Recurse -Force -ErrorAction SilentlyContinue
+gh run download $run -R 1qlee/fps-overlay -n FpsOverlay-win-x64 -D $dir
+& "$dir\install.cmd"
+```
+
+The same commands update an existing install. Name a run ID as shown; without
+one, `gh` downloads the artifact from every recent run into the same folder.
+
 **Build it yourself** (needs the [.NET 8 SDK](https://dotnet.microsoft.com/download)):
 
 ```powershell
