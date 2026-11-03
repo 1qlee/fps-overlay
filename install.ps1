@@ -1,9 +1,8 @@
 <#
   Installs FPS Overlay for the current user.
 
-  Run from the unzipped FpsOverlay-win-x64 folder:
-      Right-click install.ps1 > Run with PowerShell
-  or
+  Easiest: double-click install.cmd in the extracted FpsOverlay-win-x64 folder.
+  Or from a PowerShell window in that folder:
       powershell -ExecutionPolicy Bypass -File .\install.ps1 [-StartWithWindows] [-Uninstall]
 
   - Copies the app to %LOCALAPPDATA%\Programs\FpsOverlay
@@ -13,7 +12,8 @@
 #>
 param(
     [switch]$StartWithWindows,
-    [switch]$Uninstall
+    [switch]$Uninstall,
+    [switch]$NoPause   # used by install.cmd, which pauses itself
 )
 
 $ErrorActionPreference = 'Stop'
@@ -24,28 +24,30 @@ $shortcut  = Join-Path ([Environment]::GetFolderPath('Programs')) "$appName.lnk"
 $exe       = Join-Path $installTo 'FpsOverlay.exe'
 
 function Test-Admin {
-    ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
-    ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-}
-
-# Registering an elevated task (or removing one) needs admin: relaunch elevated with the same switches.
-$needsAdmin = $StartWithWindows -or ($Uninstall -and (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue))
-if ($needsAdmin -and -not (Test-Admin)) {
-    $relaunch = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"")
-    if ($StartWithWindows) { $relaunch += '-StartWithWindows' }
-    if ($Uninstall)        { $relaunch += '-Uninstall' }
-    Start-Process powershell -Verb RunAs -ArgumentList $relaunch -WorkingDirectory $PSScriptRoot
-    return
+    $identity  = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = New-Object Security.Principal.WindowsPrincipal($identity)
+    return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
 $logFile = Join-Path $env:LOCALAPPDATA 'FpsOverlay\log.txt'
 
 function Pause-IfInteractive {
-    # "Run with PowerShell" closes the window as soon as the script ends; keep it open.
+    # Keep the window open so the result can be read. install.cmd also pauses.
+    if ($NoPause) { return }
     try { Read-Host "`nPress Enter to close" | Out-Null } catch { }
 }
 
 try {
+    # Registering an elevated task (or removing one) needs admin: relaunch elevated with the same switches.
+    $needsAdmin = $StartWithWindows -or ($Uninstall -and (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue))
+    if ($needsAdmin -and -not (Test-Admin)) {
+        $relaunch = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"")
+        if ($StartWithWindows) { $relaunch += '-StartWithWindows' }
+        if ($Uninstall)        { $relaunch += '-Uninstall' }
+        Start-Process powershell -Verb RunAs -ArgumentList $relaunch -WorkingDirectory $PSScriptRoot
+        return
+    }
+
     Write-Host "Stopping any running copy..."
     Get-Process FpsOverlay -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
     Start-Sleep -Milliseconds 500

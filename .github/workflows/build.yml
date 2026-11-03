@@ -14,8 +14,26 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      - name: Check install.ps1 parses in Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          $tokens = $null; $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile("$PWD\install.ps1", [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors) { $errors | ForEach-Object { Write-Host "::error::$($_.Extent.StartLineNumber): $($_.Message)" }; exit 1 }
+          Write-Host "install.ps1 parses cleanly in PowerShell $($PSVersionTable.PSVersion)"
+
       - name: Publish
         run: dotnet publish -c Release -r win-x64 --self-contained true -o publish
+
+      - name: Install smoke test
+        shell: powershell
+        run: |
+          # Runs the real installer, which launches the app and reports whether it stayed up.
+          powershell -NoProfile -ExecutionPolicy Bypass -File .\publish\install.ps1 -NoPause
+          if (-not (Test-Path "$env:LOCALAPPDATA\Programs\FpsOverlay\FpsOverlay.exe")) { throw "install.ps1 did not copy the app" }
+          Get-Process FpsOverlay -ErrorAction SilentlyContinue | Stop-Process -Force
+          Write-Host "--- app log ---"
+          Get-Content "$env:LOCALAPPDATA\FpsOverlay\log.txt" -ErrorAction SilentlyContinue
 
       - uses: actions/upload-artifact@v4
         with:
