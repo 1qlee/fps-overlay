@@ -62,6 +62,16 @@ namespace FpsOverlay
             return parent;
         }
 
+        /// <summary>
+        /// Windows 11 hides new tray icons behind the ^ overflow, so say where we are.
+        /// </summary>
+        public void ShowStartupBalloon()
+        {
+            _icon.ShowBalloonTip(5000, "FPS Overlay is running",
+                "Right-click this icon for options. Ctrl+Shift+F10 shows or hides the overlay.",
+                Forms.ToolTipIcon.Info);
+        }
+
         public void Dispose()
         {
             _icon.Visible = false;

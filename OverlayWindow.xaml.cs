@@ -81,6 +81,7 @@ namespace FpsOverlay
             NativeMethods.RegisterHotKey(_hwnd, HotkeyMove, mods, VK_F7);
 
             _fps.Start();
+            Log.Write(_fps.StartupError is null ? "FPS tracing started." : "FPS tracing NOT started: " + _fps.StartupError);
             _ = Task.Run(() => HardwareLoop(_cts.Token));
             _uiTimer.Start();
             PlaceWindow();
@@ -91,17 +92,32 @@ namespace FpsOverlay
             try
             {
                 _hardware = new HardwareMonitor();
+                Log.Write("Hardware sensors opened.");
             }
             catch (Exception ex)
             {
                 _hardwareError = "Sensors unavailable: " + ex.Message;
+                Log.Write("Hardware sensors failed: " + ex);
                 return;
             }
 
+            bool loggedFirstRead = false;
             while (!ct.IsCancellationRequested)
             {
-                try { _latestHardware = _hardware.Read(); }
-                catch (Exception ex) { _hardwareError = "Sensor read failed: " + ex.Message; }
+                try
+                {
+                    _latestHardware = _hardware.Read();
+                    if (!loggedFirstRead)
+                    {
+                        loggedFirstRead = true;
+                        Log.Write("First sensor read: " + _latestHardware);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    if (_hardwareError is null) Log.Write("Sensor read failed: " + ex);
+                    _hardwareError = "Sensor read failed: " + ex.Message;
+                }
 
                 try { await Task.Delay(1000, ct); }
                 catch (TaskCanceledException) { break; }
