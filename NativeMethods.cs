@@ -14,7 +14,7 @@ namespace FpsOverlay
         public const int WM_HOTKEY = 0x0312;
         public const int WM_NCHITTEST = 0x0084;
         public const int HTTRANSPARENT = -1;
-        public const int HTCAPTION = 2; // "this is a title bar": Windows drags the window for us
+        public const int HTCLIENT = 1;
         public const int WM_MOUSEACTIVATE = 0x0021;
         public const int MA_NOACTIVATE = 3;
         public const uint MOD_ALT = 0x0001;

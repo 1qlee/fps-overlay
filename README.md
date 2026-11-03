@@ -55,23 +55,28 @@ dotnet publish -c Release -r win-x64 --self-contained true -o publish
 | Action | How |
 | --- | --- |
 | Show / hide overlay | `Ctrl+Shift+F10`, or double-click the tray icon |
-| Move anywhere | `Ctrl+Shift+F7` (or tray → *Move freely*), drag it, then `Ctrl+Shift+F7` again to lock |
+| Move or resize | `Ctrl+Shift+F7` (or tray → *Edit position & size*): drag it to move, drag a corner to resize, then `Ctrl+Shift+F7` again to lock |
 | Snap to next screen corner | `Ctrl+Shift+F11` |
 | Make the overlay fainter / stronger | `Ctrl+Shift+F8` / `Ctrl+Shift+F9` (10% steps, down to 20%) |
 | Set overlay or background opacity | Right-click the tray icon → *Overlay opacity* / *Background opacity* |
 | Exit | Right-click the tray icon → Exit |
 
-In move mode the overlay gets a blue outline and accepts the mouse so you can
-drag it anywhere, including onto another monitor. Locking it saves the spot.
-If that monitor is later unplugged, the overlay is pulled back onto a screen
-that still exists.
+In edit mode the overlay gets a blue outline and corner grips, and it accepts
+the mouse:
+
+- **Drag the overlay** to move it anywhere, including onto another monitor.
+- **Drag a corner grip** to resize it. Text and spacing scale together
+  (50%–300%), and the opposite corner stays where it is.
+
+Locking it saves the position and size. If its monitor is later unplugged,
+the overlay is pulled back onto a screen that still exists.
 
 *Overlay opacity* fades everything, text included. *Background opacity* fades
-only the dark pill, so the numbers stay fully readable. Opacity and position
+only the dark pill, so the numbers stay fully readable. Opacity, position and size
 are saved to `%APPDATA%\FpsOverlay\settings.json` and restored the next time
 it starts.
 
-Outside move mode the overlay ignores the mouse completely. Clicks, hovering and scrolling all
+Outside edit mode the overlay ignores the mouse completely. Clicks, hovering and scrolling all
 go straight through to the game underneath, and it never takes focus. Use the
 tray icon or the hotkeys to control it.
 
@@ -90,7 +95,7 @@ elevated or the sensors can't load, a short message appears under the pill.
 - **Exclusive fullscreen:** no normal window can draw over a true exclusive-fullscreen
   game. Use *borderless* / *windowed fullscreen*. Most DX12 games, and DX11
   games with Windows' fullscreen optimisations, already behave this way.
-- **Multiple monitors:** the corner presets use the primary monitor. Use move
+- **Multiple monitors:** the corner presets use the primary monitor. Use edit
   mode to put it on another one.
 - **Sensor names:** these vary between CPU and GPU models. For temperature the
   app looks for "CPU Package" / "Core (Tctl/Tdie)" and "GPU Core". For power it
@@ -105,5 +110,6 @@ elevated or the sensors can't load, a short message appears under the pill.
 | `FrameRateMonitor.cs` | Starts a real-time ETW session on the `Microsoft-Windows-DXGI` and `Microsoft-Windows-D3D9` providers, records the timestamp of each `Present` event per process, and computes FPS over the last second. |
 | `HardwareMonitor.cs` | Polls CPU/GPU temperature and power once a second through [LibreHardwareMonitorLib](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor). |
 | `OverlayWindow.xaml(.cs)` | Transparent WPF window with `WS_EX_TRANSPARENT \| WS_EX_NOACTIVATE`, so clicks pass through and it never takes focus from the game. Refreshes twice a second and handles the global hotkeys. |
-| `TrayIcon.cs` | Notification-area icon with show/hide, move mode, corner, opacity and exit. |
+| `TrayIcon.cs` | Notification-area icon with show/hide, edit mode, corner, opacity and exit. |
 | `Settings.cs` | Loads and saves preferences as JSON. |
+| `app.ico`, `tools/make_icon.py` | App/tray icon and the script that draws it. |

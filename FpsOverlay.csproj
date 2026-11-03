@@ -12,6 +12,7 @@
     <AssemblyName>FpsOverlay</AssemblyName>
     <RootNamespace>FpsOverlay</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>app.ico</ApplicationIcon>
     <!-- Lets the project restore/build from non-Windows machines (e.g. CI). -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <Version>1.0.0</Version>
@@ -22,6 +23,11 @@
     <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" />
     <!-- Real-time ETW sessions, used to count Present() calls per process. -->
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.2.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Same icon for the tray, loaded at the small-icon size. -->
+    <EmbeddedResource Include="app.ico" LogicalName="FpsOverlay.app.ico" />
   </ItemGroup>
 
   <ItemGroup>

@@ -23,6 +23,9 @@ namespace FpsOverlay
         public double? X { get; set; }
         public double? Y { get; set; }
 
+        /// <summary>Size of the overlay relative to default (0.5–3), set by dragging a corner in edit mode.</summary>
+        public double Scale { get; set; } = 1.0;
+
         public const double MinOpacity = 0.2;
 
         private static readonly string FilePath = Path.Combine(
@@ -38,6 +41,7 @@ namespace FpsOverlay
                     s.Opacity = Math.Clamp(s.Opacity, MinOpacity, 1);
                     s.BackgroundOpacity = Math.Clamp(s.BackgroundOpacity, 0, 1);
                     s.Corner = Math.Clamp(s.Corner, 0, 3);
+                    s.Scale = Math.Clamp(s.Scale, 0.5, 3);
                     return s;
                 }
             }

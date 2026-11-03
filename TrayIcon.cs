@@ -18,11 +18,11 @@ namespace FpsOverlay
         {
             var menu = new Forms.ContextMenuStrip();
             menu.Items.Add("Show / hide   (Ctrl+Shift+F10)", null, (_, _) => overlay.ToggleVisibility());
-            var move = new Forms.ToolStripMenuItem("Move freely (drag)   (Ctrl+Shift+F7)");
-            move.Click += (_, _) => overlay.ToggleMoveMode();
-            menu.Items.Add(move);
+            var edit = new Forms.ToolStripMenuItem("Edit position && size   (Ctrl+Shift+F7)");
+            edit.Click += (_, _) => overlay.ToggleEditMode();
+            menu.Items.Add(edit);
             menu.Items.Add("Snap to next corner   (Ctrl+Shift+F11)", null, (_, _) => overlay.CycleCorner());
-            menu.Opening += (_, _) => move.Checked = overlay.IsInMoveMode;
+            menu.Opening += (_, _) => edit.Checked = overlay.IsInEditMode;
             menu.Items.Add(new Forms.ToolStripSeparator());
             menu.Items.Add(PercentMenu("Overlay opacity   (Ctrl+Shift+F8 / F9)", OverlayLevels,
                 () => overlay.OverlayOpacity, overlay.SetOverlayOpacity));
@@ -33,12 +33,36 @@ namespace FpsOverlay
 
             _icon = new Forms.NotifyIcon
             {
-                Icon = System.Drawing.SystemIcons.Application,
+                Icon = LoadAppIcon(),
                 Text = "FPS Overlay",
                 ContextMenuStrip = menu,
                 Visible = true,
             };
             _icon.DoubleClick += (_, _) => overlay.ToggleVisibility();
+
+            overlay.EditModeChanged += editing =>
+            {
+                if (editing)
+                    _icon.ShowBalloonTip(4000, "Editing overlay",
+                        "Drag it to move. Drag a corner to resize. Press Ctrl+Shift+F7 again (or use this menu) when done.",
+                        Forms.ToolTipIcon.None);
+            };
+        }
+
+        /// <summary>The app icon (app.ico, embedded) at the tray's small-icon size.</summary>
+        private static System.Drawing.Icon LoadAppIcon()
+        {
+            try
+            {
+                using var stream = typeof(TrayIcon).Assembly.GetManifestResourceStream("FpsOverlay.app.ico");
+                if (stream is not null)
+                    return new System.Drawing.Icon(stream, Forms.SystemInformation.SmallIconSize);
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Couldn't load tray icon: " + ex.Message);
+            }
+            return System.Drawing.SystemIcons.Application;
         }
 
         /// <summary>A submenu of percentages with a check next to the current value.</summary>

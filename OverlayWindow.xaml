@@ -10,8 +10,7 @@
         ShowActivated="False"
         ResizeMode="NoResize"
         SizeToContent="WidthAndHeight"
-        Focusable="False"
-        IsHitTestVisible="False">
+        Focusable="False">
 
     <Window.Resources>
         <!-- Bahnschrift ships with Windows 10+; Segoe UI is the fallback. -->
@@ -26,63 +25,106 @@
             <Setter Property="FontSize" Value="22" />
             <Setter Property="Foreground" Value="#F5F5F5" />
             <Setter Property="VerticalAlignment" Value="Center" />
+            <!-- Equal-width digits, so numbers don't jiggle as they change. -->
+            <Setter Property="Typography.NumeralAlignment" Value="Tabular" />
         </Style>
 
-        <!-- Section label: CPU / GPU / FPS -->
         <Style x:Key="Label" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-            <Setter Property="Margin" Value="0,0,10,0" />
+            <Setter Property="Margin" Value="0,0,6,0" />
         </Style>
 
-        <!-- A number with a small raised unit, e.g. 69°C or 305W -->
-        <Style x:Key="Reading" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-            <Setter Property="Margin" Value="0,0,14,0" />
-            <Setter Property="TextAlignment" Value="Right" />
-        </Style>
-
-        <Style TargetType="Run" x:Key="Unit">
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="BaselineAlignment" Value="Superscript" />
-        </Style>
-
-        <!-- Space between the CPU, GPU and FPS groups -->
-        <Style x:Key="Group" TargetType="StackPanel">
-            <Setter Property="Orientation" Value="Horizontal" />
-            <Setter Property="Margin" Value="0,0,10,0" />
+        <!-- Corner grips, only visible in edit mode. -->
+        <Style x:Key="Grip" TargetType="Rectangle">
+            <Setter Property="Width" Value="12" />
+            <Setter Property="Height" Value="12" />
+            <Setter Property="RadiusX" Value="3" />
+            <Setter Property="RadiusY" Value="3" />
+            <Setter Property="Fill" Value="{StaticResource FpsColor}" />
+            <Setter Property="Stroke" Value="White" />
+            <Setter Property="StrokeThickness" Value="1.5" />
+            <Setter Property="Visibility" Value="Collapsed" />
         </Style>
     </Window.Resources>
 
-    <StackPanel>
-        <Border x:Name="Pill" Background="#E6080A0C" CornerRadius="22" Padding="22,8,12,8">
-            <StackPanel Orientation="Horizontal">
-                <StackPanel Style="{StaticResource Group}">
+    <Grid>
+        <!-- Everything inside is scaled as one, so resizing scales the text too. -->
+        <StackPanel x:Name="Body">
+            <StackPanel.LayoutTransform>
+                <ScaleTransform x:Name="BodyScale" ScaleX="1" ScaleY="1" />
+            </StackPanel.LayoutTransform>
+
+            <Border x:Name="Pill" Background="#E6080A0C" BorderThickness="0" CornerRadius="20" Padding="16,6,16,6"
+                    Cursor="SizeAll">
+                <StackPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal" Margin="0,0,16,0">
                     <TextBlock Style="{StaticResource Label}" Foreground="{StaticResource CpuColor}" Text="CPU" />
-                    <TextBlock Style="{StaticResource Reading}" MinWidth="50">
-                        <Run x:Name="CpuTempValue" Text="–" /><Run x:Name="CpuTempUnit" Style="{StaticResource Unit}" Text="°C" />
-                    </TextBlock>
-                    <TextBlock Style="{StaticResource Reading}" MinWidth="50">
-                        <Run x:Name="CpuPowerValue" Text="–" /><Run Style="{StaticResource Unit}" Text="W" />
-                    </TextBlock>
+                    <!-- The hidden "000" reserves room for exactly three digits. -->
+                    <Grid Margin="0,0,8,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="000" Visibility="Hidden" />
+                        <TextBlock x:Name="CpuTempValue" Text="–" HorizontalAlignment="Right" />
+                        <TextBlock x:Name="CpuTempUnit" Grid.Column="1" Text="°C" />
+                    </Grid>
+                    <!-- The hidden "000" reserves room for exactly three digits. -->
+                    <Grid Margin="0,0,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="000" Visibility="Hidden" />
+                        <TextBlock x:Name="CpuPowerValue" Text="–" HorizontalAlignment="Right" />
+                        <TextBlock x:Name="CpuPowerUnit" Grid.Column="1" Text="W" />
+                    </Grid>
                 </StackPanel>
-
-                <StackPanel Style="{StaticResource Group}">
+                <StackPanel Orientation="Horizontal" Margin="0,0,16,0">
                     <TextBlock Style="{StaticResource Label}" Foreground="{StaticResource GpuColor}" Text="GPU" />
-                    <TextBlock Style="{StaticResource Reading}" MinWidth="50">
-                        <Run x:Name="GpuTempValue" Text="–" /><Run x:Name="GpuTempUnit" Style="{StaticResource Unit}" Text="°C" />
-                    </TextBlock>
-                    <TextBlock Style="{StaticResource Reading}" MinWidth="62">
-                        <Run x:Name="GpuPowerValue" Text="–" /><Run Style="{StaticResource Unit}" Text="W" />
-                    </TextBlock>
+                    <!-- The hidden "000" reserves room for exactly three digits. -->
+                    <Grid Margin="0,0,8,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="000" Visibility="Hidden" />
+                        <TextBlock x:Name="GpuTempValue" Text="–" HorizontalAlignment="Right" />
+                        <TextBlock x:Name="GpuTempUnit" Grid.Column="1" Text="°C" />
+                    </Grid>
+                    <!-- The hidden "000" reserves room for exactly three digits. -->
+                    <Grid Margin="0,0,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="000" Visibility="Hidden" />
+                        <TextBlock x:Name="GpuPowerValue" Text="–" HorizontalAlignment="Right" />
+                        <TextBlock x:Name="GpuPowerUnit" Grid.Column="1" Text="W" />
+                    </Grid>
                 </StackPanel>
-
-                <StackPanel Style="{StaticResource Group}">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
                     <TextBlock Style="{StaticResource Label}" Foreground="{StaticResource FpsColor}" Text="FPS" />
-                    <TextBlock Style="{StaticResource Reading}" x:Name="FpsText" MinWidth="40" Text="–" />
+                    <!-- The hidden "000" reserves room for exactly three digits. -->
+                    <Grid Margin="0,0,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="000" Visibility="Hidden" />
+                        <TextBlock x:Name="FpsValue" Text="–" HorizontalAlignment="Right" />
+                                            </Grid>
                 </StackPanel>
-            </StackPanel>
-        </Border>
+                </StackPanel>
+            </Border>
 
-        <!-- Only shown when something is wrong (not elevated, sensors missing, ...). -->
-        <TextBlock x:Name="StatusText" Visibility="Collapsed" FontSize="11" Foreground="#C8CDD2"
-                   Margin="22,4,0,0" />
-    </StackPanel>
+            <!-- Only shown when something is wrong (not elevated, sensors missing, ...). -->
+            <TextBlock x:Name="StatusText" Visibility="Collapsed" FontSize="11" Foreground="#C8CDD2"
+                       Margin="16,4,0,0" />
+        </StackPanel>
+
+        <Rectangle x:Name="GripTopLeft" Style="{StaticResource Grip}" HorizontalAlignment="Left" VerticalAlignment="Top" Cursor="SizeNWSE" />
+        <Rectangle x:Name="GripTopRight" Style="{StaticResource Grip}" HorizontalAlignment="Right" VerticalAlignment="Top" Cursor="SizeNESW" />
+        <Rectangle x:Name="GripBottomRight" Style="{StaticResource Grip}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Cursor="SizeNWSE" />
+        <Rectangle x:Name="GripBottomLeft" Style="{StaticResource Grip}" HorizontalAlignment="Left" VerticalAlignment="Bottom" Cursor="SizeNESW" />
+    </Grid>
 </Window>
