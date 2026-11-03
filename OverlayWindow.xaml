@@ -10,7 +10,8 @@
         ShowActivated="False"
         ResizeMode="NoResize"
         SizeToContent="WidthAndHeight"
-        Focusable="False">
+        Focusable="False"
+        IsHitTestVisible="False">
 
     <Window.Resources>
         <!-- Bahnschrift ships with Windows 10+; Segoe UI is the fallback. -->
@@ -51,7 +52,7 @@
     </Window.Resources>
 
     <StackPanel>
-        <Border Background="#E6080A0C" CornerRadius="22" Padding="22,8,12,8">
+        <Border x:Name="Pill" Background="#E6080A0C" CornerRadius="22" Padding="22,8,12,8">
             <StackPanel Orientation="Horizontal">
                 <StackPanel Style="{StaticResource Group}">
                     <TextBlock Style="{StaticResource Label}" Foreground="{StaticResource CpuColor}" Text="CPU" />

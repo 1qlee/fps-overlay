@@ -16,6 +16,10 @@ namespace FpsOverlay
 
         private const int HotkeyToggle = 1;
         private const int HotkeyCorner = 2;
+        private const int HotkeyFainter = 3;
+        private const int HotkeyStronger = 4;
+        private const uint VK_F8 = 0x77;
+        private const uint VK_F9 = 0x78;
         private const uint VK_F10 = 0x79;
         private const uint VK_F11 = 0x7A;
         private const double EdgeMargin = 12;
@@ -31,12 +35,19 @@ namespace FpsOverlay
 
         private readonly DispatcherTimer _uiTimer;
         private readonly CancellationTokenSource _cts = new();
-        private Corner _corner = Corner.TopLeft;
+        private readonly Settings _settings = Settings.Load();
+        private Corner _corner;
         private IntPtr _hwnd;
+
+        public double OverlayOpacity => _settings.Opacity;
+        public double BackgroundOpacity => _settings.BackgroundOpacity;
 
         public OverlayWindow()
         {
             InitializeComponent();
+
+            _corner = (Corner)_settings.Corner;
+            ApplyOpacity();
 
             _uiTimer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(500) };
             _uiTimer.Tick += (_, _) => RefreshUi();
@@ -60,6 +71,8 @@ namespace FpsOverlay
             const uint mods = NativeMethods.MOD_CONTROL | NativeMethods.MOD_SHIFT | NativeMethods.MOD_NOREPEAT;
             NativeMethods.RegisterHotKey(_hwnd, HotkeyToggle, mods, VK_F10);
             NativeMethods.RegisterHotKey(_hwnd, HotkeyCorner, mods, VK_F11);
+            NativeMethods.RegisterHotKey(_hwnd, HotkeyFainter, mods, VK_F8);
+            NativeMethods.RegisterHotKey(_hwnd, HotkeyStronger, mods, VK_F9);
 
             _fps.Start();
             _ = Task.Run(() => HardwareLoop(_cts.Token));
@@ -131,6 +144,32 @@ namespace FpsOverlay
         {
             _corner = (Corner)(((int)_corner + 1) % 4);
             PlaceInCorner();
+            _settings.Corner = (int)_corner;
+            _settings.Save();
+        }
+
+        /// <summary>Sets the opacity of the whole overlay, text included.</summary>
+        public void SetOverlayOpacity(double value)
+        {
+            _settings.Opacity = Math.Clamp(Math.Round(value, 2), Settings.MinOpacity, 1);
+            ApplyOpacity();
+            _settings.Save();
+        }
+
+        /// <summary>Sets the opacity of the dark pill only; the text stays as it is.</summary>
+        public void SetBackgroundOpacity(double value)
+        {
+            _settings.BackgroundOpacity = Math.Clamp(Math.Round(value, 2), 0, 1);
+            ApplyOpacity();
+            _settings.Save();
+        }
+
+        private void ApplyOpacity()
+        {
+            Opacity = _settings.Opacity;
+            var bg = new SolidColorBrush(Color.FromArgb((byte)Math.Round(_settings.BackgroundOpacity * 255), 0x08, 0x0A, 0x0C));
+            bg.Freeze();
+            Pill.Background = bg;
         }
 
         private void PlaceInCorner()
@@ -146,13 +185,26 @@ namespace FpsOverlay
 
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
-            if (msg == NativeMethods.WM_HOTKEY)
+            switch (msg)
             {
-                switch (wParam.ToInt32())
-                {
-                    case HotkeyToggle: ToggleVisibility(); handled = true; break;
-                    case HotkeyCorner: CycleCorner(); handled = true; break;
-                }
+                // Belt and braces on top of WS_EX_TRANSPARENT: tell Windows the mouse is
+                // never over this window, and never let a click activate it.
+                case NativeMethods.WM_NCHITTEST:
+                    handled = true;
+                    return new IntPtr(NativeMethods.HTTRANSPARENT);
+                case NativeMethods.WM_MOUSEACTIVATE:
+                    handled = true;
+                    return new IntPtr(NativeMethods.MA_NOACTIVATE);
+
+                case NativeMethods.WM_HOTKEY:
+                    switch (wParam.ToInt32())
+                    {
+                        case HotkeyToggle: ToggleVisibility(); handled = true; break;
+                        case HotkeyCorner: CycleCorner(); handled = true; break;
+                        case HotkeyFainter: SetOverlayOpacity(_settings.Opacity - 0.1); handled = true; break;
+                        case HotkeyStronger: SetOverlayOpacity(_settings.Opacity + 0.1); handled = true; break;
+                    }
+                    break;
             }
             return IntPtr.Zero;
         }
@@ -163,6 +215,8 @@ namespace FpsOverlay
             _cts.Cancel();
             NativeMethods.UnregisterHotKey(_hwnd, HotkeyToggle);
             NativeMethods.UnregisterHotKey(_hwnd, HotkeyCorner);
+            NativeMethods.UnregisterHotKey(_hwnd, HotkeyFainter);
+            NativeMethods.UnregisterHotKey(_hwnd, HotkeyStronger);
             _fps.Dispose();
             _hardware?.Dispose();
         }

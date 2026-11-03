@@ -12,6 +12,10 @@ namespace FpsOverlay
         public const long WS_EX_NOACTIVATE = 0x08000000;  // never steals focus from the game
 
         public const int WM_HOTKEY = 0x0312;
+        public const int WM_NCHITTEST = 0x0084;
+        public const int HTTRANSPARENT = -1;
+        public const int WM_MOUSEACTIVATE = 0x0021;
+        public const int MA_NOACTIVATE = 3;
         public const uint MOD_ALT = 0x0001;
         public const uint MOD_CONTROL = 0x0002;
         public const uint MOD_SHIFT = 0x0004;

@@ -43,7 +43,18 @@ dotnet publish -c Release -r win-x64 --self-contained true -o publish
 | --- | --- |
 | Show / hide overlay | `Ctrl+Shift+F10`, or double-click the tray icon |
 | Move to next screen corner | `Ctrl+Shift+F11` |
+| Make the overlay fainter / stronger | `Ctrl+Shift+F8` / `Ctrl+Shift+F9` (10% steps, down to 20%) |
+| Set overlay or background opacity | Right-click the tray icon → *Overlay opacity* / *Background opacity* |
 | Exit | Right-click the tray icon → Exit |
+
+*Overlay opacity* fades everything, text included. *Background opacity* fades
+only the dark pill, so the numbers stay fully readable. Opacity and corner
+are saved to `%APPDATA%\FpsOverlay\settings.json` and restored the next time
+it starts.
+
+The overlay ignores the mouse completely. Clicks, hovering and scrolling all
+go straight through to the game underneath, and it never takes focus. Use the
+tray icon or the hotkeys to control it.
 
 The overlay tracks the app in the **foreground window**. If that app isn't
 rendering, it falls back to whichever process is presenting the most frames.
@@ -74,4 +85,5 @@ elevated or the sensors can't load, a short message appears under the pill.
 | `FrameRateMonitor.cs` | Starts a real-time ETW session on the `Microsoft-Windows-DXGI` and `Microsoft-Windows-D3D9` providers, records the timestamp of each `Present` event per process, and computes FPS over the last second. |
 | `HardwareMonitor.cs` | Polls CPU/GPU temperature and power once a second through [LibreHardwareMonitorLib](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor). |
 | `OverlayWindow.xaml(.cs)` | Transparent WPF window with `WS_EX_TRANSPARENT \| WS_EX_NOACTIVATE`, so clicks pass through and it never takes focus from the game. Refreshes twice a second and handles the global hotkeys. |
-| `TrayIcon.cs` | Notification-area icon with show/hide, move and exit. |
+| `TrayIcon.cs` | Notification-area icon with show/hide, move, opacity and exit. |
+| `Settings.cs` | Loads and saves preferences as JSON. |

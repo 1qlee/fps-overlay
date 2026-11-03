@@ -3,9 +3,15 @@ using Forms = System.Windows.Forms;
 
 namespace FpsOverlay
 {
-    /// <summary>Notification-area icon: the only way to interact with the click-through overlay by mouse.</summary>
+    /// <summary>
+    /// Notification-area icon. The overlay itself ignores the mouse entirely,
+    /// so this menu is where it's controlled with the mouse.
+    /// </summary>
     internal sealed class TrayIcon : IDisposable
     {
+        private static readonly int[] OverlayLevels = { 100, 90, 80, 70, 60, 50, 40, 30, 20 };
+        private static readonly int[] BackgroundLevels = { 100, 90, 75, 60, 45, 30, 15, 0 };
+
         private readonly Forms.NotifyIcon _icon;
 
         public TrayIcon(OverlayWindow overlay, Action exit)
@@ -13,6 +19,11 @@ namespace FpsOverlay
             var menu = new Forms.ContextMenuStrip();
             menu.Items.Add("Show / hide   (Ctrl+Shift+F10)", null, (_, _) => overlay.ToggleVisibility());
             menu.Items.Add("Move to next corner   (Ctrl+Shift+F11)", null, (_, _) => overlay.CycleCorner());
+            menu.Items.Add(new Forms.ToolStripSeparator());
+            menu.Items.Add(PercentMenu("Overlay opacity   (Ctrl+Shift+F8 / F9)", OverlayLevels,
+                () => overlay.OverlayOpacity, overlay.SetOverlayOpacity));
+            menu.Items.Add(PercentMenu("Background opacity", BackgroundLevels,
+                () => overlay.BackgroundOpacity, overlay.SetBackgroundOpacity));
             menu.Items.Add(new Forms.ToolStripSeparator());
             menu.Items.Add("Exit", null, (_, _) => exit());
 
@@ -24,6 +35,27 @@ namespace FpsOverlay
                 Visible = true,
             };
             _icon.DoubleClick += (_, _) => overlay.ToggleVisibility();
+        }
+
+        /// <summary>A submenu of percentages with a check next to the current value.</summary>
+        private static Forms.ToolStripMenuItem PercentMenu(string text, int[] levels, Func<double> get, Action<double> set)
+        {
+            var parent = new Forms.ToolStripMenuItem(text);
+            foreach (int pct in levels)
+            {
+                var item = new Forms.ToolStripMenuItem(pct + "%");
+                item.Click += (_, _) => set(pct / 100.0);
+                parent.DropDownItems.Add(item);
+            }
+
+            // Values can also change via hotkeys, so refresh the checks each time it opens.
+            parent.DropDownOpening += (_, _) =>
+            {
+                int current = (int)Math.Round(get() * 100);
+                for (int i = 0; i < levels.Length; i++)
+                    ((Forms.ToolStripMenuItem)parent.DropDownItems[i]).Checked = levels[i] == current;
+            };
+            return parent;
         }
 
         public void Dispose()
