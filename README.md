@@ -25,10 +25,23 @@ anti-cheat games.
 
 ## Getting it
 
-**Prebuilt:** every push runs the
-*Build* GitHub Actions workflow. Download the `FpsOverlay-win-x64`
-artifact from that run, unzip it, and run `FpsOverlay.exe`. The build is
-self-contained, so no .NET install is needed.
+**Prebuilt:** every push runs the *Build* GitHub Actions workflow.
+
+1. Open the latest run under **Actions → Build**. While signed in to GitHub,
+   download the `FpsOverlay-win-x64` artifact and unzip it.
+2. In the unzipped folder, right-click `install.ps1` → **Run with PowerShell**.
+   This copies the app to `%LOCALAPPDATA%\Programs\FpsOverlay`, adds a Start
+   Menu shortcut and launches it. The build is self-contained, so no .NET install
+   is needed.
+
+To also start it at sign-in without a UAC prompt each time, run this in a
+PowerShell window in that folder:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -StartWithWindows
+```
+
+`-Uninstall` removes the app, its shortcut and the startup task.
 
 **Build it yourself** (needs the [.NET 8 SDK](https://dotnet.microsoft.com/download)):
 
