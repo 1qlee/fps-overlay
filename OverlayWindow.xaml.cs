@@ -18,6 +18,8 @@ namespace FpsOverlay
         private const int HotkeyCorner = 2;
         private const int HotkeyFainter = 3;
         private const int HotkeyStronger = 4;
+        private const int HotkeyMove = 5;
+        private const uint VK_F7 = 0x76;
         private const uint VK_F8 = 0x77;
         private const uint VK_F9 = 0x78;
         private const uint VK_F10 = 0x79;
@@ -38,6 +40,9 @@ namespace FpsOverlay
         private readonly Settings _settings = Settings.Load();
         private Corner _corner;
         private IntPtr _hwnd;
+        private bool _moveMode;
+
+        public bool IsInMoveMode => _moveMode;
 
         public double OverlayOpacity => _settings.Opacity;
         public double BackgroundOpacity => _settings.BackgroundOpacity;
@@ -53,7 +58,7 @@ namespace FpsOverlay
             _uiTimer.Tick += (_, _) => RefreshUi();
 
             SourceInitialized += OnSourceInitialized;
-            SizeChanged += (_, _) => PlaceInCorner();
+            SizeChanged += (_, _) => PlaceWindow();
             Closed += OnClosed;
         }
 
@@ -73,11 +78,12 @@ namespace FpsOverlay
             NativeMethods.RegisterHotKey(_hwnd, HotkeyCorner, mods, VK_F11);
             NativeMethods.RegisterHotKey(_hwnd, HotkeyFainter, mods, VK_F8);
             NativeMethods.RegisterHotKey(_hwnd, HotkeyStronger, mods, VK_F9);
+            NativeMethods.RegisterHotKey(_hwnd, HotkeyMove, mods, VK_F7);
 
             _fps.Start();
             _ = Task.Run(() => HardwareLoop(_cts.Token));
             _uiTimer.Start();
-            PlaceInCorner();
+            PlaceWindow();
         }
 
         private async Task HardwareLoop(CancellationToken ct)
@@ -117,9 +123,11 @@ namespace FpsOverlay
             CpuPowerValue.Text = FormatNumber(hw?.CpuPowerW);
             GpuPowerValue.Text = FormatNumber(hw?.GpuPowerW);
 
-            string? error = _fps.StartupError ?? _hardwareError;
-            StatusText.Text = error ?? "";
-            StatusText.Visibility = error is null ? Visibility.Collapsed : Visibility.Visible;
+            string? message = _moveMode
+                ? "Drag to move  ·  Ctrl+Shift+F7 to lock"
+                : _fps.StartupError ?? _hardwareError;
+            StatusText.Text = message ?? "";
+            StatusText.Visibility = message is null ? Visibility.Collapsed : Visibility.Visible;
         }
 
         /// <summary>Temperatures stay white until they get hot, then turn amber and red.</summary>
@@ -136,16 +144,22 @@ namespace FpsOverlay
 
         public void ToggleVisibility()
         {
+            if (_moveMode) ToggleMoveMode(); // lock before hiding
             if (IsVisible) Hide();
             else Show();
         }
 
         public void CycleCorner()
         {
-            _corner = (Corner)(((int)_corner + 1) % 4);
-            PlaceInCorner();
+            if (_moveMode) ToggleMoveMode(); // lock first so the new spot isn't overridden
+
+            // Leaving a custom position snaps back to the current corner first.
+            if (_settings.X is null)
+                _corner = (Corner)(((int)_corner + 1) % 4);
+            _settings.X = _settings.Y = null;
             _settings.Corner = (int)_corner;
             _settings.Save();
+            PlaceWindow();
         }
 
         /// <summary>Sets the opacity of the whole overlay, text included.</summary>
@@ -172,6 +186,54 @@ namespace FpsOverlay
             Pill.Background = bg;
         }
 
+        /// <summary>
+        /// Move mode: the overlay temporarily accepts the mouse so it can be dragged
+        /// anywhere, on any monitor. Turning it off saves the position and makes the
+        /// overlay click-through again.
+        /// </summary>
+        public void ToggleMoveMode()
+        {
+            _moveMode = !_moveMode;
+
+            long ex = NativeMethods.GetWindowLongPtr(_hwnd, NativeMethods.GWL_EXSTYLE).ToInt64();
+            ex = _moveMode ? ex & ~NativeMethods.WS_EX_TRANSPARENT : ex | NativeMethods.WS_EX_TRANSPARENT;
+            NativeMethods.SetWindowLongPtr(_hwnd, NativeMethods.GWL_EXSTYLE, new IntPtr(ex));
+
+            Pill.BorderThickness = new Thickness(_moveMode ? 2 : 0);
+            Pill.BorderBrush = (Brush)FindResource("FpsColor");
+
+            if (_moveMode)
+            {
+                if (!IsVisible) Show();
+            }
+            else
+            {
+                _settings.X = Math.Round(Left);
+                _settings.Y = Math.Round(Top);
+                _settings.Save();
+            }
+
+            RefreshUi();
+        }
+
+        private void PlaceWindow()
+        {
+            if (_moveMode)
+                return; // the user is dragging it
+
+            if (_settings.X is { } x && _settings.Y is { } y)
+            {
+                // Keep it on screen in case the monitor it was on has been unplugged.
+                double vl = SystemParameters.VirtualScreenLeft, vt = SystemParameters.VirtualScreenTop;
+                double vw = SystemParameters.VirtualScreenWidth, vh = SystemParameters.VirtualScreenHeight;
+                Left = Math.Clamp(x, vl, Math.Max(vl, vl + vw - ActualWidth));
+                Top = Math.Clamp(y, vt, Math.Max(vt, vt + vh - ActualHeight));
+                return;
+            }
+
+            PlaceInCorner();
+        }
+
         private void PlaceInCorner()
         {
             // Full primary-screen bounds (not the work area), since games cover the taskbar.
@@ -191,7 +253,7 @@ namespace FpsOverlay
                 // never over this window, and never let a click activate it.
                 case NativeMethods.WM_NCHITTEST:
                     handled = true;
-                    return new IntPtr(NativeMethods.HTTRANSPARENT);
+                    return new IntPtr(_moveMode ? NativeMethods.HTCAPTION : NativeMethods.HTTRANSPARENT);
                 case NativeMethods.WM_MOUSEACTIVATE:
                     handled = true;
                     return new IntPtr(NativeMethods.MA_NOACTIVATE);
@@ -203,6 +265,7 @@ namespace FpsOverlay
                         case HotkeyCorner: CycleCorner(); handled = true; break;
                         case HotkeyFainter: SetOverlayOpacity(_settings.Opacity - 0.1); handled = true; break;
                         case HotkeyStronger: SetOverlayOpacity(_settings.Opacity + 0.1); handled = true; break;
+                        case HotkeyMove: ToggleMoveMode(); handled = true; break;
                     }
                     break;
             }
@@ -217,6 +280,7 @@ namespace FpsOverlay
             NativeMethods.UnregisterHotKey(_hwnd, HotkeyCorner);
             NativeMethods.UnregisterHotKey(_hwnd, HotkeyFainter);
             NativeMethods.UnregisterHotKey(_hwnd, HotkeyStronger);
+            NativeMethods.UnregisterHotKey(_hwnd, HotkeyMove);
             _fps.Dispose();
             _hardware?.Dispose();
         }

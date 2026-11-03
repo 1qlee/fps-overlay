@@ -18,7 +18,11 @@ namespace FpsOverlay
         {
             var menu = new Forms.ContextMenuStrip();
             menu.Items.Add("Show / hide   (Ctrl+Shift+F10)", null, (_, _) => overlay.ToggleVisibility());
-            menu.Items.Add("Move to next corner   (Ctrl+Shift+F11)", null, (_, _) => overlay.CycleCorner());
+            var move = new Forms.ToolStripMenuItem("Move freely (drag)   (Ctrl+Shift+F7)");
+            move.Click += (_, _) => overlay.ToggleMoveMode();
+            menu.Items.Add(move);
+            menu.Items.Add("Snap to next corner   (Ctrl+Shift+F11)", null, (_, _) => overlay.CycleCorner());
+            menu.Opening += (_, _) => move.Checked = overlay.IsInMoveMode;
             menu.Items.Add(new Forms.ToolStripSeparator());
             menu.Items.Add(PercentMenu("Overlay opacity   (Ctrl+Shift+F8 / F9)", OverlayLevels,
                 () => overlay.OverlayOpacity, overlay.SetOverlayOpacity));

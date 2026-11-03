@@ -16,6 +16,13 @@ namespace FpsOverlay
         /// <summary>0 = top left, 1 = top right, 2 = bottom right, 3 = bottom left.</summary>
         public int Corner { get; set; }
 
+        /// <summary>
+        /// Custom position (top-left, in device-independent pixels) set by dragging in
+        /// move mode. When null, the overlay sits in <see cref="Corner"/>.
+        /// </summary>
+        public double? X { get; set; }
+        public double? Y { get; set; }
+
         public const double MinOpacity = 0.2;
 
         private static readonly string FilePath = Path.Combine(
